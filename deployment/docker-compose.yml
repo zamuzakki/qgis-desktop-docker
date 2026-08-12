@@ -1,0 +1,38 @@
+# Standalone compose file for the local (Ubuntu/apt, no Nix) build.
+x-common-qgis-desktop:
+  &default-qgis-desktop
+  image: qgis-desktop-docker:local
+  build:
+    context: ../
+    dockerfile: deployment/Dockerfile
+  env_file:
+    - .env
+  # Required so the entrypoint can install nftables egress-lockdown rules.
+  # If you drop this cap, you MUST also set KASM_EGRESS_LOCKDOWN=0 in .env or
+  # the container will refuse to start.
+  cap_add:
+    - NET_ADMIN
+  restart: unless-stopped
+
+services:
+  qgis-main:
+    <<: *default-qgis-desktop
+    container_name: qgis-main
+    ports:
+      - "6001:8443"
+    environment:
+      - VNC_USER=main
+      - VNC_PW=password
+    volumes:
+      - ./.volumes/main:/home/user
+
+  qgis-user_1:
+     <<: *default-qgis-desktop
+     container_name: qgis-user_1
+     ports:
+       - "6002:8443"
+     environment:
+       - VNC_USER=user_1
+       - VNC_PW=password
+     volumes:
+       - ./.volumes/user_1:/home/user
