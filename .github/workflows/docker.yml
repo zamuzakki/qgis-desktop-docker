@@ -295,9 +295,14 @@ jobs:
       # report + "Download & Run" instructions) into pr-comment.md on disk,
       # then feed the file to create-or-update-comment via body-path. The
       # body never enters the process environment.
+      #
+      # Skipped for PRs from forks: GitHub hands those runs a read-only
+      # GITHUB_TOKEN whatever `permissions:` says, so posting the comment
+      # fails with 403 "Resource not accessible by integration". The same
+      # report is still in the run's step summary.
 
       - name: Find existing PR comment
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: peter-evans/find-comment@v4
         id: find-comment
         with:
@@ -306,7 +311,7 @@ jobs:
           body-includes: "## Docker Image Build"
 
       - name: Assemble PR comment body
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           TAG: ${{ steps.version.outputs.tag }}
           REPO: ${{ github.repository }}
@@ -342,7 +347,7 @@ jobs:
           } > pr-comment.md
 
       - name: Post or update PR comment
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: peter-evans/create-or-update-comment@v4
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
